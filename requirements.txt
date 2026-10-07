@@ -1,0 +1,48 @@
+# API Framework
+fastapi
+uvicorn[standard]
+python-multipart
+
+# Auth
+python-jose[cryptography]
+passlib[bcrypt]
+
+# Database
+sqlalchemy
+alembic
+psycopg2-binary
+
+# Vector DB
+chromadb
+
+# PDF Parsing
+pymupdf
+pdfplumber
+
+# Embeddings & Reranking (all free, local)
+sentence-transformers
+torch --index-url https://download.pytorch.org/whl/cpu
+
+# LLM (Groq - free tier)
+groq
+
+# OR Ollama client (local)
+ollama
+
+# RAG Evaluation
+ragas
+
+# Guardrails
+guardrails-ai
+
+# A2A
+# google-a2a (we'll add when scaffolding agents)
+
+# MCP
+fastmcp
+
+# Utilities
+python-dotenv
+pydantic-settings
+aiofiles
+httpx
