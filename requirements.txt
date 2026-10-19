@@ -1,48 +1,46 @@
-# API Framework
-fastapi
-uvicorn[standard]
-python-multipart
+# ─────────────────────────────────────────────────────────────
+#  PolicyPal — requirements.txt
+#  We add to this file at each step. Do NOT install everything
+#  at once — install only what the current step needs.
+# ─────────────────────────────────────────────────────────────
 
-# Auth
-python-jose[cryptography]
-passlib[bcrypt]
+# ── STEP 1: Project skeleton + FastAPI ───────────────────────
+fastapi          # The web framework
+uvicorn[standard]  # The server that runs FastAPI
+pydantic-settings  # For reading config from .env files
+python-dotenv    # Loads .env file into environment variables
 
-# Database
-sqlalchemy
-alembic
-psycopg2-binary
+# ── STEP 2: Database (add after Step 1 is running) ───────────
+sqlalchemy       # ORM — maps Python classes to DB tables
+alembic          # DB migration tool (like version control for your schema)
+psycopg2-binary  # PostgreSQL driver for Python
 
-# Vector DB
-chromadb
+# ── STEP 3: Auth (add after Step 2 is running) ───────────────
+pyJWT  # JWT token creation and verification
+bcrypt           # Password hashing
+pydantic[email]  # Email validation for user registration
 
-# PDF Parsing
-pymupdf
-pdfplumber
+# ── STEP 4: File uploads (add after Step 3 is running) ───────
+python-multipart  # Needed for FastAPI to handle file uploads
+# aiofiles          # Async file I/O
 
-# Embeddings & Reranking (all free, local)
-sentence-transformers
-torch --index-url https://download.pytorch.org/whl/cpu
+# ── STEP 5: PDF parsing (add after Step 4 is running) ────────
+# pymupdf      # Fast PDF text extraction (import as fitz)
+# pdfplumber   # Better for tables and complex PDFs
 
-# LLM (Groq - free tier)
-groq
+# ── STEP 6: Embeddings + Vector DB ───────────────────────────
+# sentence-transformers  # Local embedding models (free, no API)
+# chromadb               # Local vector database
 
-# OR Ollama client (local)
-ollama
+# ── STEP 7: Reranking ────────────────────────────────────────
+# (sentence-transformers also handles cross-encoder reranking)
 
-# RAG Evaluation
-ragas
+# ── STEP 8: LLM (Groq — free tier) ──────────────────────────
+# groq   # Groq API client (Llama 3.1 for free)
 
-# Guardrails
-guardrails-ai
+# ── STEP 9: Evaluation ───────────────────────────────────────
+# ragas  # RAG evaluation framework
 
-# A2A
-# google-a2a (we'll add when scaffolding agents)
-
-# MCP
-fastmcp
-
-# Utilities
-python-dotenv
-pydantic-settings
-aiofiles
-httpx
+# ── STEP 13-14: Agents ───────────────────────────────────────
+# fastmcp   # MCP server builder
+# httpx     # Async HTTP client (for A2A calls)
