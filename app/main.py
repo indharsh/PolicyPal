@@ -5,10 +5,18 @@ from app.core.database import get_db
 from app.models.user import User
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from app.routes import auth
+from contextlib import asynccontextmanager
+from app.core.storage import ensure_bucket
+from app.routes import auth, documents
 
 
-app = FastAPI(
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    ensure_bucket()  # runs once at startup; fails loudly if MinIO is not reachable
+    yield
+
+
+app = FastAPI(lifespan=lifespan, 
     title=settings.APP_NAME, 
     version=settings.APP_VERSION,
     debug=settings.DEBUG,
@@ -23,6 +31,7 @@ app.add_middleware(
 )
 
 app.include_router(auth.router, prefix="/api/v1")
+app.include_router(documents.router, prefix="/api/v1")
 
 @app.get("/")
 def root():

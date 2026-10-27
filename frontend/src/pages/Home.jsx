@@ -1,66 +1,94 @@
+import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../AuthContext";
+import Icon from "../components/Icon";
+import { useDocuments } from "../DocumentsContext";
+import { suggestions } from "../mockData";
 
-// A JWT is three base64 parts. The middle one (payload) is readable by anyone.
-function tokenExpiry(token) {
-  try {
-    const b64 = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
-    const payload = JSON.parse(atob(b64));
-    return new Date(payload.exp * 1000);
-  } catch {
-    return null;
-  }
+function greeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
 }
 
-const upcoming = [
-  { title: "Upload a policy", text: "Add a PDF and PolicyPal reads and indexes it for you.", status: "Next up", next: true },
-  { title: "Ask questions", text: "Chat with your policy and get answers with cited clauses.", status: "Coming soon" },
-  { title: "Your history", text: "Every document and conversation, saved to your account.", status: "Coming soon" },
-];
-
 export default function Home() {
-  const { user, token, logout } = useAuth();
+  const { user } = useAuth();
+  const [draft, setDraft] = useState("");
+  const [notice, setNotice] = useState("");
   const name = user.first_name || user.username;
-  const expiry = tokenExpiry(token);
+  const { documents } = useDocuments();
+  const ready = documents.filter((d) => d.status === "ready").length;
+
+  function submit() {
+    if (!draft.trim()) return;
+    setNotice("Chat arrives in a later step, so this question was not sent anywhere yet.");
+  }
+
+  function handleKeyDown(e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      submit();
+    }
+  }
 
   return (
-    <>
-      <header className="topbar">
-        <div className="brand-mark">
-          <span className="brand-dot" />
-          PolicyPal
+    <div className="home">
+      <div className="home-inner">
+        <div className="hero">
+          <span className="hero-dot" />
+          <h1>{greeting()}, {name}</h1>
+          <p>Ask anything about the policies you have uploaded.</p>
         </div>
-        <div className="topbar-right">
-          <span>{user.username}</span>
-          <button className="btn btn-ghost" onClick={logout}>Sign out</button>
+
+        <div className="composer">
+          <label htmlFor="composer" className="sr-only">Ask a question</label>
+          <textarea
+            id="composer"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Ask a question about your policy, for example: what is the waiting period for pre-existing conditions?"
+          />
+          <div className="composer-bar">
+            <button className="round-btn" aria-label="Attach a document">
+              <Icon name="paperclip" />
+            </button>
+            <button className="pill-btn">
+              All documents <Icon name="chevronDown" size={16} />
+            </button>
+            <div className="grow" />
+            <button
+              className="send-btn"
+              aria-label="Send question"
+              disabled={!draft.trim()}
+              onClick={submit}
+            >
+              <Icon name="arrowUp" size={20} />
+            </button>
+          </div>
         </div>
-      </header>
 
-      <div className="container">
-        <h1>Hello, {name}</h1>
-        <p className="lead">Your workspace is ready. Here is what is coming next.</p>
+        {notice && <div className="notice" role="status">{notice}</div>}
 
-        <div className="grid">
-          {upcoming.map((c) => (
-            <div className="card" key={c.title}>
-              <span className={`pill ${c.next ? "next" : ""}`}>{c.status}</span>
-              <h3>{c.title}</h3>
-              <p>{c.text}</p>
-            </div>
+        <div className="suggestions">
+          {suggestions.map((s) => (
+            <button key={s} className="pill-btn" onClick={() => setDraft(s)}>{s}</button>
           ))}
         </div>
 
-        <div className="card account">
-          <h3>Your account</h3>
-          <p>This is the data returned by the API's /auth/me endpoint.</p>
-          <dl>
-            <dt>User ID</dt><dd>{user.id}</dd>
-            <dt>Username</dt><dd>{user.username}</dd>
-            <dt>Email</dt><dd>{user.email}</dd>
-            <dt>Member since</dt><dd>{new Date(user.created_time).toLocaleString()}</dd>
-            <dt>Session expires</dt><dd>{expiry ? expiry.toLocaleString() : "unknown"}</dd>
-          </dl>
+        <div className="home-foot">
+          <Link to="/documents" className="home-link">
+            {ready} of {documents.length} documents ready · Manage documents
+          </Link>
+          <p>
+            PolicyPal answers from your documents and cites the clause it used. 
+          </p>
+          <p>
+            For important decisions, confirm with the issuer of the policy.
+          </p>
         </div>
       </div>
-    </>
+    </div>
   );
 }

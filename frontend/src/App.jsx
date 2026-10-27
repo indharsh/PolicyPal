@@ -1,7 +1,10 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuth } from "./AuthContext";
+import AppLayout from "./components/AppLayout";
+import Documents from "./pages/Documents";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
+import Profile from "./pages/Profile";
 import Register from "./pages/Register";
 
 // UX guard only: hides pages from logged-out users.
@@ -22,7 +25,13 @@ function PublicOnly({ children }) {
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+      {/* Every logged-in page shares the sidebar layout */}
+      <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+        <Route path="/" element={<Home />} />
+        <Route path="/documents" element={<Documents />} />
+        <Route path="/profile" element={<Profile />} />
+      </Route>
+
       <Route path="/login" element={<PublicOnly><Login /></PublicOnly>} />
       <Route path="/register" element={<PublicOnly><Register /></PublicOnly>} />
       <Route path="*" element={<Navigate to="/" replace />} />

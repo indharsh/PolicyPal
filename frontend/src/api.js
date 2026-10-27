@@ -61,3 +61,20 @@ export function loginUser(username, password) {
 export function getMe(token) {
   return request("/auth/me", {}, token);
 }
+// ---- documents ----
+export function listDocuments(token) {
+  return request("/documents", {}, token);
+}
+
+export function uploadDocument(token, file, category) {
+  // FormData makes the browser send multipart/form-data. We must NOT set Content-Type ourselves:
+  // the browser adds it together with the "boundary" string that separates the parts.
+  const body = new FormData();
+  body.append("file", file);
+  body.append("category", category);
+  return request("/documents", { method: "POST", body }, token);
+}
+
+export function deleteDocument(token, id) {
+  return request(`/documents/${id}`, { method: "DELETE" }, token);
+}

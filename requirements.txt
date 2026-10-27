@@ -22,7 +22,7 @@ pydantic[email]  # Email validation for user registration
 
 # ── STEP 4: File uploads (add after Step 3 is running) ───────
 python-multipart  # Needed for FastAPI to handle file uploads
-# aiofiles          # Async file I/O
+minio             # MinIO / S3 object storage client
 
 # ── STEP 5: PDF parsing (add after Step 4 is running) ────────
 # pymupdf      # Fast PDF text extraction (import as fitz)
