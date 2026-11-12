@@ -20,6 +20,8 @@ DOCX = FileKind(
 TXT = FileKind("txt", ".txt", "text/plain")
 MD = FileKind("md", ".md", "text/markdown")
 
+KIND_BY_CONTENT_TYPE = {k.content_type: k for k in (PDF, DOCX, TXT, MD)}
+
 SUPPORTED_LABEL = "PDF, Word (.docx), or text (.txt, .md)"
 
 

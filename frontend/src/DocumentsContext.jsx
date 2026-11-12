@@ -24,6 +24,16 @@ export function DocumentsProvider({ children }) {
 
   useEffect(() => { refresh(); }, [refresh]);
 
+  // While any document is still being processed, ask the server again every 2.5 seconds.
+  // Each refresh replaces `documents`, which re-runs this effect, so polling stops by itself
+  // once nothing is "uploaded" or "processing" any more.
+  useEffect(() => {
+    const pending = documents.some((d) => d.status === "uploaded" || d.status === "processing");
+    if (!pending) return;
+    const timer = setTimeout(refresh, 2500);
+    return () => clearTimeout(timer);
+  }, [documents, refresh]);
+
   // These throw on failure so the calling page can show the message next to the button.
   async function upload(file, category) {
     const doc = await uploadDocument(token, file, category);

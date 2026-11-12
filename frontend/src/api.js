@@ -72,7 +72,7 @@ export function uploadDocument(token, file, category) {
   const body = new FormData();
   body.append("file", file);
   body.append("category", category);
-  return request("/documents", { method: "POST", body }, token);
+  return request("/documents/upload", { method: "POST", body }, token);
 }
 
 export function deleteDocument(token, id) {

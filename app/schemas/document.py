@@ -20,4 +20,12 @@ class DocumentOut(BaseModel):
     status: str
     summary: Optional[str] = None
     page_count: Optional[int] = None
+    error_message: Optional[str] = None
     created_time: datetime
+
+
+class DocumentPageOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    page_number: int
+    text: str

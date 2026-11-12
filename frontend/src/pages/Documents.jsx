@@ -27,10 +27,15 @@ function formatDate(iso) {
 }
 
 function noteFor(d) {
-  if (d.status === "ready") return d.summary || "This document is ready for questions.";
-  if (d.status === "uploaded") return "Stored safely. Reading and indexing its text is the next build step.";
+  if (d.status === "ready") {
+    if (d.summary) return d.summary;
+    return d.page_count
+      ? `Text read from all ${d.page_count} pages. Ready for questions once chat is added.`
+      : "Text read successfully. Ready for questions once chat is added.";
+  }
+  if (d.status === "uploaded") return "Waiting to be processed.";
   if (d.status === "processing") return "PolicyPal is reading this document.";
-  return d.summary || "Processing failed. Try uploading a new copy.";
+  return d.error_message || "Processing failed. Try uploading a new copy.";
 }
 
 export default function Documents() {
@@ -84,15 +89,20 @@ export default function Documents() {
           <p>Every policy you have uploaded, and what PolicyPal knows about it.</p>
         </div>
         <div className="upload-box">
-          <select
-            aria-label="Category for the next upload"
-            value={uploadCategory}
-            onChange={(e) => setUploadCategory(e.target.value)}
-          >
-            {UPLOAD_CATEGORIES.map((c) => (
-              <option key={c.key} value={c.key}>{c.label}</option>
-            ))}
-          </select>
+          <label className="select-field">
+            <span className="select-label">Category</span>
+            <span className="select-wrap">
+              <select
+                value={uploadCategory}
+                onChange={(e) => setUploadCategory(e.target.value)}
+              >
+                {UPLOAD_CATEGORIES.map((c) => (
+                  <option key={c.key} value={c.key}>{c.label}</option>
+                ))}
+              </select>
+              <Icon name="chevronDown" size={16} />
+            </span>
+          </label>
           <input ref={fileInput} type="file" accept=".pdf,.docx,.txt,.md,application/pdf" hidden onChange={onFileChosen} />
           <button className="btn-primary" disabled={uploading} onClick={() => fileInput.current.click()}>
             <Icon name="upload" /> {uploading ? "Uploading…" : "Upload policy"}

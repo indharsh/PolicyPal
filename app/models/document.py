@@ -39,8 +39,13 @@ class UserDocument(Base):
     status = Column(String, nullable=False, default=DocumentStatus.uploaded.value, index=True)
     summary = Column(Text, nullable=True)
     page_count = Column(Integer, nullable=True)
+    error_message = Column(Text, nullable=True)
     is_deleted = Column(Boolean, default=False)
     created_time = Column(DateTime(timezone=True), server_default=func.now())
     modified_time = Column(DateTime(timezone=True), onupdate=func.now())
 
-    owner = relationship("User", back_populates="documents") 
+    owner = relationship("User", back_populates="documents")
+    pages = relationship(
+        "DocumentPage", back_populates="document", cascade="all, delete-orphan", passive_deletes=True,
+        order_by="DocumentPage.page_number",
+    ) 

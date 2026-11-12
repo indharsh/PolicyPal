@@ -27,7 +27,7 @@ def register(payload: UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Passwords do not match")
 
     user = User(
-        username=payload.username,
+        username=payload.username.lower(),
         email=email,
         hashed_password=hash_password(payload.password),
         first_name=payload.first_name,
@@ -44,7 +44,7 @@ def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get
     identifier = form.username.strip()
     user = (
         db.query(User)
-        .filter(or_(User.email == identifier.lower(), User.username == identifier))
+        .filter(or_(User.email == identifier.lower(), User.username == identifier.lower()))
         .first()
     )
     if user is None or not verify_password(form.password, user.hashed_password):

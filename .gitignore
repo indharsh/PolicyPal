@@ -37,3 +37,9 @@ Thumbs.db
 
 # Docker
 *.log
+
+# Cloud credentials: never commit
+*service-account*.json
+*-sa.json
+credentials*.json
+.gcp/

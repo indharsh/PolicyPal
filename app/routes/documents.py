@@ -2,8 +2,7 @@ import hashlib
 import uuid
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
-from minio.error import S3Error
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -11,13 +10,13 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.core import storage
 from app.core.deps import get_current_user
+from app.core.filetypes import SUPPORTED_LABEL, detect_file_kind
 from app.models.document import DocumentCategory, DocumentStatus, UserDocument
 from app.models.user import User
-from app.schemas.document import DocumentOut
+from app.schemas.document import DocumentOut, DocumentPageOut
+from app.services.pipeline import process_document
 
 router = APIRouter(prefix="/documents", tags=["documents"])
-
-PDF_MAGIC = b"%PDF-"  # every real PDF file starts with these 5 bytes
 
 
 def object_key(user_id: int, stored_filename: str) -> str:
@@ -42,6 +41,7 @@ def get_owned_document(db: Session, doc_id: int, user: User) -> UserDocument:
 
 @router.post("/upload", response_model=DocumentOut, status_code=status.HTTP_201_CREATED)
 def upload_document(
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     category: str = Form(DocumentCategory.other.value),
     db: Session = Depends(get_db),
@@ -59,8 +59,12 @@ def upload_document(
     if not data:
         raise HTTPException(status_code=400, detail="File is empty")
 
+    # 3. Work out what the file really is from its content (see filetypes.py)
+    kind = detect_file_kind(data, file.filename or "")
+    if kind is None:
+        raise HTTPException(status_code=415, detail=f"Unsupported file. Upload a {SUPPORTED_LABEL} file.")
 
-    # 3. Fingerprint the content, then refuse an exact duplicate for this user
+    # 4. Fingerprint the content, then refuse an exact duplicate for this user
     file_hash = hashlib.sha256(data).hexdigest()
     duplicate = (
         db.query(UserDocument)
@@ -70,21 +74,21 @@ def upload_document(
     if duplicate:
         raise HTTPException(status_code=409, detail="You have already uploaded this file")
 
-    # 4. Save to MinIO under a random key. The user's filename is never part of the key,
+    # 5. Save to Google Cloud Storage under a random key. The user's filename is never part of the key,
     #    so nothing the user types can steer where the object goes.
-    stored_filename = f"{uuid.uuid4().hex}.pdf"
+    stored_filename = f"{uuid.uuid4().hex}{kind.extension}"
     key = object_key(current_user.id, stored_filename)
     try:
-        storage.put_object(key, data, "application/pdf")
-    except S3Error:
+        storage.put_object(key, data, kind.content_type)
+    except storage.STORAGE_ERRORS:
         raise HTTPException(status_code=503, detail="File storage is unavailable, try again shortly")
 
-    # 5. Record it in the DB. If that fails, remove the object so storage and DB stay in sync.
+    # 6. Record it in the DB. If that fails, remove the object so storage and DB stay in sync.
     doc = UserDocument(
         user_id=current_user.id,
-        original_filename=Path(file.filename or "document.pdf").name,
+        original_filename=Path(file.filename or f"document{kind.extension}").name,
         stored_filename=stored_filename,
-        content_type="application/pdf",
+        content_type=kind.content_type,
         size_bytes=len(data),
         file_hash=file_hash,
         category=category,
@@ -98,6 +102,9 @@ def upload_document(
         storage.remove_object(key)
         raise HTTPException(status_code=409, detail="You have already uploaded this file")
     db.refresh(doc)
+
+    # 7. Hand the slow work (reading the file) to a background task; the user gets their response now
+    background_tasks.add_task(process_document, doc.id)
     return doc
 
 
@@ -116,12 +123,18 @@ def get_document(doc_id: int, db: Session = Depends(get_db), current_user: User 
     return get_owned_document(db, doc_id, current_user)
 
 
+@router.get("/{doc_id}/text", response_model=list[DocumentPageOut])
+def get_document_text(doc_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """The extracted text, page by page. Useful for checking what the parser actually read."""
+    return get_owned_document(db, doc_id, current_user).pages
+
+
 @router.delete("/{doc_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_document(doc_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     doc = get_owned_document(db, doc_id, current_user)
     try:
         storage.remove_object(object_key(current_user.id, doc.stored_filename))
-    except S3Error:
+    except storage.STORAGE_ERRORS:
         # Keep the DB row so we never lose track of an object that still exists
         raise HTTPException(status_code=503, detail="File storage is unavailable, try again shortly")
     db.delete(doc)

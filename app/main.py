@@ -6,13 +6,13 @@ from app.models.user import User
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from contextlib import asynccontextmanager
-from app.core.storage import ensure_bucket
+from app.core.storage import check_storage_access
 from app.routes import auth, documents
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    ensure_bucket()  # runs once at startup; fails loudly if MinIO is not reachable
+    check_storage_access()  # runs once at startup; fails loudly if GCS is not reachable
     yield
 
 
