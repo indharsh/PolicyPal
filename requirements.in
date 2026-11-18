@@ -1,0 +1,14 @@
+   fastapi
+   uvicorn[standard]
+   pydantic-settings
+   python-dotenv
+   sqlalchemy
+   alembic
+   psycopg2-binary
+   PyJWT
+   bcrypt
+   pydantic[email]
+   python-multipart
+   google-cloud-storage
+   pymupdf
+   python-docx
